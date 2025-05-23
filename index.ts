@@ -39,16 +39,28 @@ async function sendWebhook(price: string) {
 	}
 }
 
-let currentMarket = await getMarket();
-marketPrice = currentMarket['price'];
+let currentMarket;
+try {
+	currentMarket = await getMarket();
+	marketPrice = currentMarket['price'];
+} catch (error) {
+	console.warn("Failed to fetch initial market data:", error);
+}
 
 setInterval(async () => {
-	let currentMarket = await getMarket();
-	console.log(currentMarket['price']);
-	console.log(marketPrice);
-	if (currentMarket['price'] != marketPrice) {
-		// price updated
-		await sendWebhook(currentMarket['price'].toString());
-		marketPrice = currentMarket['price'];
+	try {
+		let currentMarket = await getMarket();
+		if (typeof currentMarket['price'] !== 'number') {
+			throw new Error("Unexpected response format: 'price' is not a number");
+		}
+		console.log(currentMarket['price']);
+		console.log(marketPrice);
+		if (currentMarket['price'] != marketPrice) {
+			// price updated
+			await sendWebhook(currentMarket['price'].toString());
+			marketPrice = currentMarket['price'];
+		}
+	} catch (error) {
+		console.warn("Failed to fetch or process market data:", error);
 	}
 }, 10000);
